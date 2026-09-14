@@ -5,8 +5,11 @@ generic ARMv7-A target with a VFP unit but a **soft-float** (EABI, not
 EABIHF) userspace ABI, using the OpenEmbedded **warrior** release built
 directly from `bitbake` + `openembedded-core` + `meta-openembedded`
 (no poky). `bitbake` is pinned to its `1.42` branch, the version that
-shipped with warrior. `DISTRO` is set to `nodistro`
+shipped with warrior. `DISTRO` is set to `nodistro`.
 
+This _should_ provide the tools and package feeds to compile for LabVIEW Hobbyist Toolkit Beaglebone-Black and RaspberryPi targets.
+
+This was created with Claude.ai (note the em-dash in the title 🙄) and in-so-far as any copyright/ownership applies, it is released under the BSD-0 licence.
 
 ## 1. Build the Ubuntu 16.04 container image
 
