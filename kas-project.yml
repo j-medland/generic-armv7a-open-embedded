@@ -1,0 +1,96 @@
+# kas-project.yml
+#
+# Builds a generic ARMv7-A (VFP unit present, soft-float / EABI calling
+# convention) rootfs + ipk package feed, using the OpenEmbedded "warrior"
+# release directly (bitbake + openembedded-core + meta-openembedded --
+# no poky). bitbake is pinned to branch "1.42", which is the bitbake
+# version that shipped with the warrior release.
+#
+# Run with:
+#   KAS_CONTAINER_IMAGE=kas-ubuntu1604:latest kas-container build kas-project.yml
+
+header:
+  version: 11          # kas config schema version (kas itself can be much newer than "warrior")
+
+machine: generic-armv7a
+distro: nodistro
+
+target:
+  - core-image-minimal            # the rootfs
+  - core-image-minimal:do_populate_sdk   # standard SDK (toolchain + matching sysroot)
+  - package-index                 # generates Packages/Packages.gz -> package feed
+
+# ---------------------------------------------------------------------------
+# Repositories / layers
+# ---------------------------------------------------------------------------
+repos:
+  # kas' own containing repo (this directory). Needed so the local
+  # meta-generic-armv7a layer below has somewhere to live and be tracked.
+  kas-project:
+    path: .
+    layers:
+      layers/meta-generic-armv7a:
+
+  bitbake:
+    url: "https://github.com/openembedded/bitbake.git"
+    branch: "1.42"          # bitbake branch that matches the warrior release
+    path: layers/bitbake
+    layers:
+      # bitbake is the tool itself, not a layer -- explicitly empty so
+      # kas doesn't default to adding its own root as a BBLAYERS entry
+      .: excluded
+
+  openembedded-core:
+    url: "https://github.com/openembedded/openembedded-core.git"
+    branch: warrior
+    path: layers/openembedded-core
+    layers:
+      meta:
+
+  meta-openembedded:
+    url: "https://github.com/openembedded/meta-openembedded.git"
+    branch: warrior
+    path: layers/meta-openembedded
+    layers:
+      meta-oe:
+      meta-python:
+      meta-networking:
+      meta-filesystems:
+
+# ---------------------------------------------------------------------------
+# local.conf fragments
+# ---------------------------------------------------------------------------
+local_conf_header:
+  standard: |
+    PATCHRESOLVE = "noop"
+    CONF_VERSION = "1"
+    DL_DIR ?= "${TOPDIR}/../downloads"
+    SSTATE_DIR ?= "${TOPDIR}/../sstate-cache"
+    BB_DISKMON_DIRS ??= "\
+        STOPTASKS,${TMPDIR},1G,100K \
+        STOPTASKS,${DL_DIR},1G,100K \
+        STOPTASKS,${SSTATE_DIR},1G,100K \
+        STOPTASKS,/tmp,100M,100K \
+        ABORT,${TMPDIR},100M,1K \
+        ABORT,${DL_DIR},100M,1K \
+        ABORT,${SSTATE_DIR},100M,1K \
+        ABORT,/tmp,10M,1K"
+
+  tune: |
+    # ARMv7-A + VFP, soft-float (EABI) calling convention.
+    # oe-core's "armv7a" tune already includes the vfp feature
+    # (TUNE_FEATURES_tune-armv7a = "arm armv7a vfp"); it is *not*
+    # a hard-float ABI (that's the separate "armv7ahf" tune).
+    DEFAULTTUNE = "armv7a"
+
+  packaging_and_feeds: |
+    PACKAGE_CLASSES = "package_ipk"
+    IMAGE_FSTYPES = "tar.bz2"
+    # Where target devices will point opkg at to consume this feed:
+    PACKAGE_FEED_URIS = "http://feeds.example.local/generic-armv7a"
+    PACKAGE_FEED_BASE_PATHS = "ipk"
+    PACKAGE_FEED_ARCHS = ""
+
+  misc: |
+    INHERIT += "rm_work"
+    EXTRA_IMAGE_FEATURES ?= "debug-tweaks package-management"

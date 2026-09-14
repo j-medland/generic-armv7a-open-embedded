@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# Minimal stand-in for kas' own container-entrypoint: kas-container
+# passes a bare subcommand ("build kas-project.yml", "shell ...", etc)
+# as the container's command. Without an entrypoint that prepends
+# "kas", Docker tries to exec "build" as a binary and fails with
+# "exec build failed: No such file or directory".
+#
+# This also creates a "builder" user matching the host UID/GID (which
+# kas-container passes in as USER_ID/GROUP_ID) and runs kas as that
+# user via gosu, so generated files aren't owned by root on the host.
+#
+# Note: /repo (the project/kas-file checkout) is mounted read-only by
+# kas-container on purpose, so it's deliberately excluded from the
+# chown loop below -- attempting it just produces a wall of harmless
+# but noisy "Read-only file system" errors.
+set -e
+
+USER_ID="${USER_ID:-1000}"
+GROUP_ID="${GROUP_ID:-1000}"
+
+if ! getent group "$GROUP_ID" >/dev/null 2>&1; then
+    groupadd -g "$GROUP_ID" builder
+fi
+if ! id -u builder >/dev/null 2>&1; then
+    useradd -m -u "$USER_ID" -g "$GROUP_ID" -s /bin/bash builder
+fi
+
+for DIR in /build /work /downloads /sstate /repo-ref; do
+    if [ -d "$DIR" ]; then
+        chown -R "$USER_ID":"$GROUP_ID" "$DIR" 2>/dev/null || true
+    fi
+done
+
+case "$1" in
+    build|checkout|shell|for-all-repos|clean|dump|menu|-*)
+        exec gosu builder kas "$@"
+        ;;
+    *)
+        # allow dropping into an arbitrary command, e.g.
+        # `kas-container --... shell -c 'bash'`-style invocations
+        exec gosu builder "$@"
+        ;;
+esac

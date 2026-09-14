@@ -1,0 +1,77 @@
+# Ubuntu 16.04 based build container for kas-container.
+#
+# Build:
+#   docker build -t kas-ubuntu1604:latest -f docker/Dockerfile.ubuntu-16.04 docker
+#
+# Use:
+#   export KAS_CONTAINER_IMAGE=kas-ubuntu1604:latest
+#   kas-container build kas-project.yml
+
+FROM ubuntu:16.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
+# Packages required by the Yocto/OE "warrior" release host requirements
+# for Ubuntu (these use the system python3 = 3.5, which Warrior is fine
+# with), plus git/ssh/locales and the build deps needed to compile a
+# newer Python from source (see below).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gawk wget curl git-core diffstat unzip texinfo gcc-multilib \
+        build-essential chrpath socat cpio \
+        python python3 python3-pip python3-pexpect \
+        xz-utils debianutils iputils-ping \
+        python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev \
+        pylint3 xterm python3-subunit mesa-common-dev zstd liblz4-tool \
+        locales ca-certificates openssh-client sudo file \
+        libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev \
+        libncurses5-dev libncursesw5-dev libffi-dev liblzma-dev tk-dev \
+    && locale-gen en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------------------------------------
+# kas itself needs a much newer Python than the 3.5 that ships with
+# 16.04 (current kas requires >=3.9; even older kas releases want
+# 3.6+). The deadsnakes PPA no longer reliably supports xenial, so
+# build an interpreter from source instead, installed as `python3.9`
+# only (altinstall) -- the system python3/python3.5 used by bitbake
+# is left completely untouched.
+# --------------------------------------------------------------------
+ARG PYTHON_FOR_KAS_VERSION=3.9.19
+RUN cd /usr/src \
+    && wget -q https://www.python.org/ftp/python/${PYTHON_FOR_KAS_VERSION}/Python-${PYTHON_FOR_KAS_VERSION}.tgz \
+    && tar xzf Python-${PYTHON_FOR_KAS_VERSION}.tgz \
+    && cd Python-${PYTHON_FOR_KAS_VERSION} \
+    && ./configure --enable-optimizations --with-ensurepip=install \
+    && make -j"$(nproc)" \
+    && make altinstall \
+    && cd / && rm -rf /usr/src/Python-${PYTHON_FOR_KAS_VERSION}*
+
+RUN python3.9 -m pip install --upgrade pip setuptools wheel \
+    && python3.9 -m pip install --no-cache-dir kas
+
+# `make altinstall` + pip puts the `kas` console script at
+# /usr/local/bin/kas already, built against python3.9 -- confirm it's
+# first on PATH and leave `python3`/`python3.5` pointing at the
+# distro interpreter for bitbake's sake.
+RUN kas --version
+
+# gosu (drop root -> host UID/GID) and tini (PID 1 / zombie reaping),
+# both fetched as static binaries since 16.04 doesn't package them.
+RUN wget -qO /usr/local/bin/gosu \
+        "https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64" \
+    && chmod +x /usr/local/bin/gosu \
+    && gosu nobody true \
+    && wget -qO /usr/local/bin/tini \
+        "https://github.com/krallin/tini/releases/download/v0.19.0/tini" \
+    && chmod +x /usr/local/bin/tini \
+    && tini --version
+
+COPY container-entrypoint /container-entrypoint
+RUN chmod +x /container-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/tini", "--", "/container-entrypoint"]
+
+WORKDIR /kas

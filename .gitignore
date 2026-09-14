@@ -1,0 +1,35 @@
+# --- kas working area ---------------------------------------------------
+# kas checks the git repos it manages out under layers/ (per our
+# kas-project.yml `path:` entries) except for the local meta-generic-armv7a
+# layer, which lives in this repo and should stay tracked.
+layers/bitbake/
+layers/openembedded-core/
+layers/meta-openembedded/
+layers/poky/
+
+# --- bitbake build output -------------------------------------------------
+build/
+downloads/
+sstate-cache/
+tmp/
+cache/
+*.done
+*.lock
+bitbake-cookerdaemon.log
+bitbake.sock
+
+# --- kas own state/scratch -------------------------------------------------
+.kas/
+kas-work-dir/
+
+# --- container tooling -----------------------------------------------------
+docker/*.tar
+docker/*.tar.gz
+
+# --- misc ------------------------------------------------------------------
+*.pyc
+__pycache__/
+.vscode/
+.idea/
+*.swp
+*~
