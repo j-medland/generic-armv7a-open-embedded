@@ -11,13 +11,15 @@ This _should_ provide the tools and package feeds to compile for LabVIEW Hobbyis
 
 This was created with Claude.ai (note the em-dash in the title 🙄) and in-so-far as any copyright/ownership applies, it is released under the BSD-0 licence.
 
-## 1. Build the Ubuntu 16.04 container image
+## Usage
+
+### 1. Build the Ubuntu 16.04 container image
 
 ```bash
 docker build -t kas-ubuntu1604:latest -f docker/Dockerfile.ubuntu-16.04 docker
 ```
 
-## 2. Build
+### 2. Build
 
 From the directory containing `kas-project.yml`:
 
