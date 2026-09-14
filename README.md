@@ -17,27 +17,18 @@ This was created with Claude.ai (note the em-dash in the title 🙄) and in-so-f
 docker build -t kas-ubuntu1604:latest -f docker/Dockerfile.ubuntu-16.04 docker
 ```
 
-## 2. Point kas-container at that image
-
-```bash
-export KAS_CONTAINER_IMAGE=kas-ubuntu1604:latest
-```
-
-(`KAS_CONTAINER_IMAGE` is what tells `kas-container` to use your image
-instead of the default `ghcr.io/siemens/kas/kas:<version>`.)
-
-## 3. Build
+## 2. Build
 
 From the directory containing `kas-project.yml`:
 
 ```bash
-kas-container build kas-project.yml
+KAS_CONTAINER_IMAGE=kas-ubuntu1604:latest kas-container build kas-project.yml
 ```
 
 Or, to poke around first:
 
 ```bash
-kas-container shell kas-project.yml
+KAS_CONTAINER_IMAGE=kas-ubuntu1604:latest kas-container shell kas-project.yml
 ```
 
 Outputs land under `build/tmp/deploy/`:
