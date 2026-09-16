@@ -1,15 +1,10 @@
 # generic-armv7a (vfp, soft-float) — kas / kas-container project
 
-Builds a rootfs (`core-image-minimal`) plus an ipk package feed for a
-generic ARMv7-A target with a VFP unit but a *soft-float* (EABI, not
-EABIHF) userspace ABI, using the OpenEmbedded **warrior** release built
-directly from `bitbake` + `openembedded-core` + `meta-openembedded`
-(no poky). `bitbake` is pinned to its `1.42` branch, the version that
-shipped with warrior. `DISTRO` is set to `nodistro`.
+Use `kas` to build a rootfs, ipk package feed and linux SDK for a generic ARMv7-A target with a VFP unit using the OpenEmbedded **warrior** release built directly from `bitbake` + `openembedded-core` + `meta-openembedded`.
 
 This _should_ provide the tools and package feeds to compile for LabVIEW Hobbyist Toolkit Beaglebone-Black and RaspberryPi targets.
 
-This was created with Claude.ai (note the em-dash in the title 🙄) and in-so-far as any copyright/ownership applies, it is released under the BSD-0 licence.
+Most of the content of this repository was created with Claude.ai (note the em-dash in the title 🙄) and in-so-far as any copyright/ownership applies, it is released under the BSD-0 licence.
 
 ## Usage
 
