@@ -94,3 +94,4 @@ local_conf_header:
   misc: |
     INHERIT += "rm_work"
     EXTRA_IMAGE_FEATURES ?= "debug-tweaks package-management"
+    IMAGE_INSTALL_append = " libusb1 usbutils"
